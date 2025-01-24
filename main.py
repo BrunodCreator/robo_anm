@@ -7,9 +7,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from time import sleep
 import os
-from func.selecionar_combobox import selecionar_subs_agrupadora, selecionar_substancia, selecionar_regiao, selecionar_estado, selecionar_municipio
-from func.selecionar_radio import selecionar_radio_empresa, selecionar_radio_operacao
-from func.clicar_gera import clicar_gera
+# from func.selecionar_combobox import selecionar_subs_agrupadora, selecionar_substancia, selecionar_regiao, selecionar_estado, selecionar_municipio
+# from func.selecionar_radio import selecionar_radio_empresa, selecionar_radio_operacao
+# from func.clicar_gera import clicar_gera
+from func.salvar_dados_planilha import capturar_todos_os_dados, salvar_dados_completos_planilha
 
 #configurando o webdriver
 
@@ -21,31 +22,10 @@ url = 'https://sistemas.anm.gov.br/arrecadacao/extra/relatorios/cfem/maiores_arr
 navegador.get(url)
 
 sleep(15)
-def capturar_primeiras_seis_colunas():
-    # Captura o elemento com o seletor CSS
-    elemento = navegador.find_element(By.CSS_SELECTOR, '#ctl00_ContentPlaceHolder1_dvResultado > table.tabelaRelatorio')
 
-    # Extrai o texto do elemento
-    texto = elemento.text
-    print(f"Dado capturado: {texto}")
+# Captura os dados combinados
+dados_completos = capturar_todos_os_dados(func_navegador=navegador)
 
-    # Transforma o texto em um dicionário
-    dados = {}
-    for linha in texto.split("\n"):  # Divide o texto em linhas
-        if " : " in linha:  # Verifica se a linha contém " : "
-            chave, valor = linha.split(" : ", 1)  # Divide a linha em chave e valor
-            dados[chave.strip()] = valor.strip()  # Adiciona ao dicionário removendo espaços extras
-
-    print(dados)
-    # ano = dados['Ano']
-    # subs_agrupadora = dados['Substância Agrupadora']
-    # substancia = dados['Substância']
-    # regiao = dados['Regiao']
-    # estado = dados['Estado']
-    # municipio = dados['Municipio']
-    # # Exibe o dicionário
-    # return ano, subs_agrupadora, substancia, regiao, estado, municipio
-
-# def capturar_coluna_inferior():
-    
-capturar_primeiras_seis_colunas()
+print(dados_completos)
+# Salva os dados na planilha
+salvar_dados_completos_planilha(dados_completos)

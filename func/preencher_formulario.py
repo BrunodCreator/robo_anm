@@ -7,6 +7,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from time import sleep
 import os
+from datetime import datetime
 from selecionar_combobox import selecionar_subs_agrupadora, selecionar_substancia, selecionar_regiao, selecionar_estado, selecionar_municipio
 from selecionar_radio import selecionar_radio_empresa, selecionar_radio_operacao
 from clicar_gera import clicar_gera
@@ -19,6 +20,7 @@ navegador = webdriver.Chrome(service=service)
 url = 'https://sistemas.anm.gov.br/arrecadacao/extra/relatorios/cfem/maiores_arrecadadores.aspx'
 navegador.get(url)
 
+data_hora_atual = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
 subs_agrupadora = selecionar_subs_agrupadora(func_navegador=navegador)
@@ -134,8 +136,8 @@ for substancia_agrupadora in subs_agrupadora_valores:
 
                 print(dados_completos)
                 # Salva os dados na planilha
-                salvar_dados_completos_planilha(dados_completos)
-                                
+                salvar_dados_completos_planilha(dados_completos, nome_arquivo=f"Maiores_Arrecadadores_{data_hora_atual}.xlsx")
+                            
                                     
 
 

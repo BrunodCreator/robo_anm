@@ -63,7 +63,7 @@ def capturar_todos_os_dados(func_navegador):
     return dados_completos
 
 
-def salvar_dados_completos_planilha(dados_completos, nome_arquivo=f"Maiores_Arrecadadores_{data_hora_atual}.xlsx"):
+def salvar_dados_completos_planilha(dados_completos, nome_arquivo=".xlsx"):
     # Caminho para salvar o arquivo na área de trabalho
     caminho_arquivo = os.path.join(os.path.expanduser("~"), "Desktop", nome_arquivo)
 

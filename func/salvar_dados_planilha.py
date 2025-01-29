@@ -64,8 +64,13 @@ def capturar_todos_os_dados(func_navegador):
 
 
 def salvar_dados_completos_planilha(dados_completos, nome_arquivo=".xlsx"):
+    
+     # Criar um nome de arquivo único para cada processo (usando o ID do processo)
+    pid = os.getpid()  # Obtém o ID único do processo
+    nome_arquivo_processo = f"{nome_arquivo.replace('.xlsx', '')}_{pid}.xlsx"
+    
     # Caminho para salvar o arquivo na área de trabalho
-    caminho_arquivo = os.path.join(os.path.expanduser("~"), "Desktop", nome_arquivo)
+    caminho_arquivo = os.path.join(os.path.expanduser("~"), "Desktop", nome_arquivo_processo)
 
     # Verifica se a planilha já existe
     if os.path.exists(caminho_arquivo):
@@ -107,3 +112,46 @@ def salvar_dados_completos_planilha(dados_completos, nome_arquivo=".xlsx"):
     # Salva a planilha
     workbook.save(caminho_arquivo)
     print(f"Dados salvos na planilha '{caminho_arquivo}' com sucesso!")
+    
+    
+    
+def mesclar_planilhas(nome_arquivo="resultado_final.xlsx"):
+    """Lê todos os arquivos gerados pelos processos e mescla em um único arquivo Excel."""
+
+    # Encontrar todos os arquivos criados pelos processos
+    arquivos = [f for f in os.listdir(os.path.expanduser("~\\Desktop")) if f.startswith(f"{nome_arquivo}") and f.endswith(".xlsx")]
+
+    if not arquivos:
+        print("Nenhum arquivo de processo encontrado para mesclar.")
+        return
+
+    # Criar um novo workbook consolidado
+    caminho_final = os.path.join(os.path.expanduser("~"), "Desktop", nome_arquivo)
+    workbook_final = Workbook()
+    folha_final = workbook_final.active
+    folha_final.title = "Dados Consolidados"
+
+    # Abrir o primeiro arquivo e copiar o cabeçalho
+    primeiro_arquivo = os.path.join(os.path.expanduser("~"), "Desktop", arquivos[0])
+    workbook = load_workbook(primeiro_arquivo)
+    folha = workbook.active
+    cabecalho = [cell.value for cell in folha[1]]  # Copiar cabeçalho da primeira linha
+    folha_final.append(cabecalho)
+
+    # Adicionar os dados de todos os arquivos
+    for arquivo in arquivos:
+        caminho_arquivo = os.path.join(os.path.expanduser("~"), "Desktop", arquivo)
+        workbook = load_workbook(caminho_arquivo)
+        folha = workbook.active
+
+        for linha in folha.iter_rows(min_row=2, values_only=True):  # Pular cabeçalho
+            folha_final.append(linha)
+
+    # Salvar o arquivo consolidado
+    workbook_final.save(caminho_final)
+    print(f"Dados mesclados no arquivo '{caminho_final}' com sucesso!")
+
+    # Opcional: Apagar arquivos individuais dos processos após a fusão
+    for arquivo in arquivos:
+        os.remove(os.path.join(os.path.expanduser("~"), "Desktop", arquivo))
+        print(f"Arquivo {arquivo} removido após a fusão.")

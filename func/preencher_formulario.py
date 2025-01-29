@@ -6,28 +6,27 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
+from multiprocessing import Process
 from time import sleep
 import os
 from datetime import datetime
 from selecionar_combobox import selecionar_subs_agrupadora, selecionar_substancia, selecionar_regiao, selecionar_estado, selecionar_municipio
 from selecionar_radio import selecionar_radio_empresa, selecionar_radio_operacao
 from clicar_gera import clicar_gera
-from salvar_dados_planilha import capturar_todos_os_dados, salvar_dados_completos_planilha
+from salvar_dados_planilha import capturar_todos_os_dados, salvar_dados_completos_planilha, mesclar_planilhas
 from abrir_navegador import abrir_navegador
 
+nome_arquivo = "Teste_seis"
+
+# Definir o número de processos (quantas instâncias do robô rodarão ao mesmo tempo)
+num_processos = 6
 
 
+def preencher_formulario(navegador, subs_agrupadora_sublist):
+    """Preenche o formulário apenas para um subconjunto de dados"""
+# Dividir os dados de `subs_agrupadora` em subconjuntos
 
-nome_arquivo = str(input('Digite o nome da planilha que os dados serão salvos(Sem extensão): '))
-navegador=abrir_navegador()
-
-
-def preencher_formulario(navegador):
-    
-    subs_agrupadora = selecionar_subs_agrupadora(func_navegador=navegador)
-    subs_agrupadora_valores = [option.get_attribute("value") for option in subs_agrupadora.options if option.get_attribute("value")]
-
-    for substancia_agrupadora in subs_agrupadora_valores:
+    for substancia_agrupadora in subs_agrupadora_sublist:
         try:
             if substancia_agrupadora == 'Todas as Agrupadoras':
                 continue    
@@ -115,6 +114,10 @@ def preencher_formulario(navegador):
                         selecionar_radio_operacao(func_navegador=navegador)
                 
                         clicar_gera(func_navegador=navegador)
+                        
+                         # Capturar e salvar os dados
+                        dados_completos = capturar_todos_os_dados(func_navegador=navegador)
+                        salvar_dados_completos_planilha(dados_completos, nome_arquivo=f"{nome_arquivo}.xlsx")
                     except Exception as e:
                         print(f'Erro ao selecionar os municípios erro: {e} ')
                         navegador.refresh()
@@ -129,16 +132,50 @@ def preencher_formulario(navegador):
                         selecionar_radio_operacao(func_navegador=navegador)
                 
                         clicar_gera(func_navegador=navegador)
-                                    
-                                    
-                    dados_completos = capturar_todos_os_dados(func_navegador=navegador)
 
-                    print(dados_completos)
-                    # Salva os dados na planilha
-                    salvar_dados_completos_planilha(dados_completos, nome_arquivo=f"{nome_arquivo}.xlsx")
+                         # Capturar e salvar os dados
+                        dados_completos = capturar_todos_os_dados(func_navegador=navegador)
+                        salvar_dados_completos_planilha(dados_completos, nome_arquivo=f"{nome_arquivo}.xlsx")
+
+
+
+def executar_robo(subset):
+    """Executa o robô para um subconjunto de substâncias"""
+    navegador = abrir_navegador()
+    preencher_formulario(navegador, subset)
+    navegador.quit()
+
+
+if __name__ == '__main__':
+    # Abrir o navegador temporário apenas para capturar os valores da `subs_agrupadora`
+    navegador = abrir_navegador()
+    sleep(5)
+
+    # Capturar valores das `comboboxes`
+    subs_agrupadora = selecionar_subs_agrupadora(func_navegador=navegador)
+    subs_agrupadora_valores = [option.get_attribute("value") for option in subs_agrupadora.options if option.get_attribute("value")]
+
+    navegador.quit()  # Fechar o navegador temporário
+
+    # Dividir os dados de `subs_agrupadora` em subconjuntos
+    subsets = [subs_agrupadora_valores[i::num_processos] for i in range(num_processos)]
+
+    # Criar e iniciar os processos para cada conjunto 
+    processos = []
+    for subset in subsets:
+        p = Process(target=executar_robo, args=(subset,))  # Corrigido para passar apenas um subconjunto
+        processos.append(p)
+        p.start()
+
+    for p in processos:
+        p.join()
+        
+mesclar_planilhas(f"{nome_arquivo}.xlsx")
+
+                                    
                                 
                                 
-preencher_formulario(navegador)           
+      
 
 
                 

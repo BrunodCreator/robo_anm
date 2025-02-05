@@ -32,11 +32,12 @@ def carregar_checkpoint(arquivo):
             return set(f.read().splitlines())
     return set()
     
-def salvar_checkpoint(arquivo, grupo_id):
-    """Salva um grupo ou subset concluído no checkpoint"""
-    print(f'Salvando {id} no checkpoint...')
+def salvar_checkpoint(arquivo, checkpoint_id):
+    """Salva um grupo ou subset concluído no checkpoint."""
+    print(f"✅ Salvando {checkpoint_id} no checkpoint...")
     with open(arquivo, "a") as f:
-        f.write(f'{id}\n')
+        f.write(f"{checkpoint_id}\n")  # Garante que o ID será salvo corretamente como string
+
 
 def preencher_formulario(navegador, subs_agrupadora_sublist, grupo_id, subset_id):
     """Preenche o formulário apenas para um subconjunto de dados"""
@@ -170,8 +171,13 @@ def preencher_formulario(navegador, subs_agrupadora_sublist, grupo_id, subset_id
                         print(dados_completos)
                         print(datetime.now().strftime("%H-%M-%S"))
                         salvar_dados_completos_planilha(dados_completos, nome_arquivo=f"{nome_arquivo}.xlsx")
+        
         # Salvar o progresso após cada substância
-        salvar_checkpoint(subset_checkpoint_file, f"{grupo_id}_{subset_id}_{substancia_agrupadora}")
+        subset_key = f"{grupo_id}_{subset_id}_{substancia_agrupadora}"  # Garante que é uma string válida
+        salvar_checkpoint(subset_checkpoint_file, subset_key)
+        
+    # 🔹 Ao final do subset, salva que ele foi concluído por completo
+    salvar_checkpoint(subset_checkpoint_file, f"{grupo_id}_{subset_id}")
 
 
 

@@ -15,14 +15,30 @@ from selecionar_radio import selecionar_radio_empresa, selecionar_radio_operacao
 from clicar_gera import clicar_gera
 from salvar_dados_planilha import capturar_todos_os_dados, salvar_dados_completos_planilha, mesclar_planilhas
 from abrir_navegador import abrir_navegador
+import numpy as np
+import sys 
 
+#Configurações
 nome_arquivo = "Teste_seis"
+num_grupos = 12   # 🔹 Divisão principal da lista
+num_processos = 6  # 🔹 Instâncias paralelas dentro de cada grupo
+checkpoint_file = "checkpoint.txt" #Arquivo de checkpoint
+subset_checkpoint_file = "subset_checkpoint.txt"  # 🔹 Checkpoint dos subsets
 
-# Definir o número de processos (quantas instâncias do robô rodarão ao mesmo tempo)
-num_processos = 6
+def carregar_checkpoint(arquivo):
+    """Carrega os grupos ou subsets já processados do checkpoint."""
+    if os.path.exists(arquivo):
+        with open(arquivo, "r") as f:
+            return set(f.read().splitlines())
+    return set()
+    
+def salvar_checkpoint(arquivo, grupo_id):
+    """Salva um grupo ou subset concluído no checkpoint"""
+    print(f'Salvando {id} no checkpoint...')
+    with open(arquivo, "a") as f:
+        f.write(f'{id}\n')
 
-
-def preencher_formulario(navegador, subs_agrupadora_sublist):
+def preencher_formulario(navegador, subs_agrupadora_sublist, grupo_id, subset_id):
     """Preenche o formulário apenas para um subconjunto de dados"""
 # Dividir os dados de `subs_agrupadora` em subconjuntos
 
@@ -38,17 +54,31 @@ def preencher_formulario(navegador, subs_agrupadora_sublist):
             substancia = selecionar_substancia(func_navegador=navegador)
             substancia_valores = [option.get_attribute("value") for option in substancia.options if option.get_attribute("value")]
         except Exception as e:
-            print(f'Erro ao selecionar a subs_agrupadora erro: {e}')
-            navegador.refresh()
-            if substancia_agrupadora == 'Todas as Agrupadoras':
-                continue    
-            subs_agrupadora = selecionar_subs_agrupadora(func_navegador=navegador)
-            #LINHA QUE SELECIONA O CAMPO NO COMBOBOX
-            subs_agrupadora.select_by_value(substancia_agrupadora)
-            print(f'subs_agrupadora: {substancia_agrupadora}')
-            
-            substancia = selecionar_substancia(func_navegador=navegador)
-            substancia_valores = [option.get_attribute("value") for option in substancia.options if option.get_attribute("value")]
+            try:
+                print(f'Erro ao selecionar a subs_agrupadora erro: {e}')
+                navegador.refresh()
+                if substancia_agrupadora == 'Todas as Agrupadoras':
+                    continue    
+                subs_agrupadora = selecionar_subs_agrupadora(func_navegador=navegador)
+                #LINHA QUE SELECIONA O CAMPO NO COMBOBOX
+                subs_agrupadora.select_by_value(substancia_agrupadora)
+                print(f'subs_agrupadora: {substancia_agrupadora}')
+                
+                substancia = selecionar_substancia(func_navegador=navegador)
+                substancia_valores = [option.get_attribute("value") for option in substancia.options if option.get_attribute("value")]
+            except Exception as e:
+                print(f'Não consegui recuperar do erro usando refresh, abrindo navegador novamente...')
+                navegador.quit()
+                abrir_navegador()
+                if substancia_agrupadora == 'Todas as Agrupadoras':
+                    continue    
+                subs_agrupadora = selecionar_subs_agrupadora(func_navegador=navegador)
+                #LINHA QUE SELECIONA O CAMPO NO COMBOBOX
+                subs_agrupadora.select_by_value(substancia_agrupadora)
+                print(f'subs_agrupadora: {substancia_agrupadora}')
+                
+                substancia = selecionar_substancia(func_navegador=navegador)
+                substancia_valores = [option.get_attribute("value") for option in substancia.options if option.get_attribute("value")]
         for subs in substancia_valores:
             try:
                 if subs == 'Todas as Substância':
@@ -117,6 +147,8 @@ def preencher_formulario(navegador, subs_agrupadora_sublist):
                         
                          # Capturar e salvar os dados
                         dados_completos = capturar_todos_os_dados(func_navegador=navegador)
+                        print(dados_completos)
+                        print(datetime.now().strftime("%H-%M-%S"))
                         salvar_dados_completos_planilha(dados_completos, nome_arquivo=f"{nome_arquivo}.xlsx")
                     except Exception as e:
                         print(f'Erro ao selecionar os municípios erro: {e} ')
@@ -135,42 +167,59 @@ def preencher_formulario(navegador, subs_agrupadora_sublist):
 
                          # Capturar e salvar os dados
                         dados_completos = capturar_todos_os_dados(func_navegador=navegador)
+                        print(dados_completos)
+                        print(datetime.now().strftime("%H-%M-%S"))
                         salvar_dados_completos_planilha(dados_completos, nome_arquivo=f"{nome_arquivo}.xlsx")
+        # Salvar o progresso após cada substância
+        salvar_checkpoint(subset_checkpoint_file, f"{grupo_id}_{subset_id}_{substancia_agrupadora}")
 
 
 
-def executar_robo(subset):
+def executar_robo(subset, grupo_id, subset_id):
     """Executa o robô para um subconjunto de substâncias"""
     navegador = abrir_navegador()
-    preencher_formulario(navegador, subset)
+    preencher_formulario(navegador, subset, grupo_id, subset_id)
     navegador.quit()
 
 
-if __name__ == '__main__':
-    # Abrir o navegador temporário apenas para capturar os valores da `subs_agrupadora`
+if __name__ == "__main__":
     navegador = abrir_navegador()
     sleep(5)
-
-    # Capturar valores das `comboboxes`
     subs_agrupadora = selecionar_subs_agrupadora(func_navegador=navegador)
     subs_agrupadora_valores = [option.get_attribute("value") for option in subs_agrupadora.options if option.get_attribute("value")]
+    navegador.quit()
 
-    navegador.quit()  # Fechar o navegador temporário
+    grupos = np.array_split(subs_agrupadora_valores, num_grupos)
+    grupos = [grupo.tolist() for grupo in grupos]
+    checkpoint = carregar_checkpoint(checkpoint_file)
+    subset_checkpoint = carregar_checkpoint(subset_checkpoint_file)
 
-    # Dividir os dados de `subs_agrupadora` em subconjuntos
-    subsets = [subs_agrupadora_valores[i::num_processos] for i in range(num_processos)]
+    for grupo_id, grupo in enumerate(grupos):
+        if str(grupo_id) in checkpoint:
+            print(f"✅ Grupo {grupo_id} já processado. Pulando...")
+            continue
 
-    # Criar e iniciar os processos para cada conjunto 
-    processos = []
-    for subset in subsets:
-        p = Process(target=executar_robo, args=(subset,))  # Corrigido para passar apenas um subconjunto
-        processos.append(p)
-        p.start()
+        print(f"🚀 Iniciando processamento do Grupo {grupo_id + 1}/{num_grupos}...")
+        subsets = np.array_split(grupo, num_processos)
+        subsets = [sub.tolist() for sub in subsets]
 
-    for p in processos:
-        p.join()
-        
-mesclar_planilhas(f"{nome_arquivo}.xlsx")
+        processos = []
+        for subset_id, subset in enumerate(subsets):
+            subset_key = f"{grupo_id}_{subset_id}"
+            if subset_key in subset_checkpoint:
+                print(f"✅ Subset {subset_id} do Grupo {grupo_id} já processado. Pulando...")
+                continue
+            p = Process(target=executar_robo, args=(subset, grupo_id, subset_id))
+            processos.append(p)
+            p.start()
+
+        for p in processos:
+            p.join()
+
+        salvar_checkpoint(checkpoint_file, grupo_id)
+
+    arquivos_para_mesclar = [f"{nome_arquivo}_Grupo{i}_Subset{j}.xlsx" for i in range(num_grupos) for j in range(num_processos) if f"{i}_{j}" in subset_checkpoint]
+    mesclar_planilhas(arquivos_para_mesclar, nome_arquivo_final=f"{nome_arquivo}.xlsx")
 
                                     
                                 

@@ -48,6 +48,7 @@ def capturar_todos_os_dados(func_navegador):
                 "Operação": colunas[3].text,
                 "Recolhimento CFEM": colunas[4].text,
                 "% Recolhimento CFEM": colunas[5].text
+                
             }
 
             # Adiciona os dados gerais (primeira tabela) a cada linha
@@ -89,7 +90,7 @@ def salvar_dados_completos_planilha(dados_completos, nome_arquivo=".xlsx"):
         folha.append([
             "Arrecadador (Empresa)", "Qtde Títulos", "Operação",
             "Recolhimento CFEM", "% Recolhimento CFEM",  # Dados da segunda tabela
-            "Ano", "Arrecadação por", "Ordenação por", "Substância Agrupadora", "Substância", "Região", "Estado"  # Dados gerais (primeira tabela)
+            "Ano", "Arrecadação por", "Ordenação por", "Substância Agrupadora", "Substância", "Região", "Estado", "Municipio" # Dados gerais (primeira tabela)
         ])
 
     # Adiciona os dados capturados
@@ -106,7 +107,8 @@ def salvar_dados_completos_planilha(dados_completos, nome_arquivo=".xlsx"):
             dado.get("Substância Agrupadora", ""),
             dado.get("Substância", ""),
             dado.get("Região", ""),
-            dado.get("Estado", "")
+            dado.get("Estado", ""),
+            dado.get("Municipio", "")
         ])
 
     # Salva a planilha
@@ -151,7 +153,7 @@ def mesclar_planilhas(nome_arquivo="resultado_final.xlsx"):
     workbook_final.save(caminho_final)
     print(f"Dados mesclados no arquivo '{caminho_final}' com sucesso!")
 
-    # Opcional: Apagar arquivos individuais dos processos após a fusão
-    for arquivo in arquivos:
-        os.remove(os.path.join(os.path.expanduser("~"), "Desktop", arquivo))
-        print(f"Arquivo {arquivo} removido após a fusão.")
+    # # Opcional: Apagar arquivos individuais dos processos após a fusão
+    # for arquivo in arquivos:
+    #     os.remove(os.path.join(os.path.expanduser("~"), "Desktop", arquivo))
+    #     print(f"Arquivo {arquivo} removido após a fusão.")

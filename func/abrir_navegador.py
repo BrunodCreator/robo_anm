@@ -18,7 +18,7 @@ def abrir_navegador():
         print("Iniciando o navegador...")
         service = Service(ChromeDriverManager().install())
         navegador = webdriver.Chrome(service=service, options=chrome_options)
-        url = 'https://sistemas.anm.gov.br/arrecadacao/extra/relatorios/cfem/maiores_arrecadadores.aspx'
+        url = 'https://sistemas.anm.gov.br/arrecadacao/extra/Relatorios/cfem/arrecadadores.aspx'
         navegador.get(url)
         print("Navegador iniciado com sucesso!")
         return navegador

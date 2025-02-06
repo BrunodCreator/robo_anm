@@ -13,7 +13,7 @@ from datetime import datetime
 from selecionar_combobox import selecionar_subs_agrupadora, selecionar_substancia, selecionar_regiao, selecionar_estado, selecionar_municipio
 from selecionar_radio import selecionar_radio_empresa, selecionar_radio_operacao
 from clicar_gera import clicar_gera
-from salvar_dados_planilha import capturar_todos_os_dados, salvar_dados_completos_planilha, mesclar_planilhas
+from salvar_dados_planilha import capturar_todos_os_dados, salvar_dados_completos_planilha
 from abrir_navegador import abrir_navegador
 import numpy as np
 import sys 

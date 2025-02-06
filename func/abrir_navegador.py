@@ -14,6 +14,9 @@ def abrir_navegador():
         # Ignorar erros de SSL
         chrome_options.add_argument('--ignore-certificate-errors')
         chrome_options.add_argument('--allow-insecure-localhost')
+        # chrome_options.add_argument("--headless")  # Executar em segundo plano (sem interface gráfica)
+        # chrome_options.add_argument("--disable-gpu")  # Necessário para algumas versões do Chrome
+        # chrome_options.add_argument("--no-sandbox")  # Recomendado para evitar erros em alguns sistemas
 
         print("Iniciando o navegador...")
         service = Service(ChromeDriverManager().install())

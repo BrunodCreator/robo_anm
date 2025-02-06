@@ -19,10 +19,8 @@ import numpy as np
 import sys 
 
 #Configurações
-nome_arquivo = "Teste_seis"
-num_grupos = 12   # 🔹 Divisão principal da lista
-num_processos = 6  # 🔹 Instâncias paralelas dentro de cada grupo
-checkpoint_file = "checkpoint.txt" #Arquivo de checkpoint
+nome_arquivo = "Vai_dar_certo"
+num_processos = 1  # 🔹 Instâncias paralelas dentro de cada grupo
 subset_checkpoint_file = "subset_checkpoint.txt"  # 🔹 Checkpoint dos subsets
 
 def carregar_checkpoint(arquivo):
@@ -39,18 +37,23 @@ def salvar_checkpoint(arquivo, checkpoint_id):
         f.write(f"{checkpoint_id}\n")  # Garante que o ID será salvo corretamente como string
 
 
-def preencher_formulario(navegador, subs_agrupadora_sublist, grupo_id, subset_id):
+def preencher_formulario(navegador, subs_agrupadora_valores):
     """Preenche o formulário apenas para um subconjunto de dados"""
 # Dividir os dados de `subs_agrupadora` em subconjuntos
-
-    for substancia_agrupadora in subs_agrupadora_sublist:
+    checkpoint = carregar_checkpoint(subset_checkpoint_file)
+    
+    for subs_agrupada in subs_agrupadora_valores:
+        if subs_agrupada in checkpoint:
+            print(f"🔄 {subs_agrupada} já processado. Pulando...")
+            continue  # Pula se já estiver no checkpoint
         try:
-            if substancia_agrupadora == 'Todas as Agrupadoras':
+            if subs_agrupada == 'Todas as Agrupadoras':
                 continue    
             subs_agrupadora = selecionar_subs_agrupadora(func_navegador=navegador)
+            
             #LINHA QUE SELECIONA O CAMPO NO COMBOBOX
-            subs_agrupadora.select_by_value(substancia_agrupadora)
-            print(f'subs_agrupadora: {substancia_agrupadora}')
+            subs_agrupadora.select_by_value(subs_agrupada)
+            print(f'subs_agrupadora: {subs_agrupada}')
             
             substancia = selecionar_substancia(func_navegador=navegador)
             substancia_valores = [option.get_attribute("value") for option in substancia.options if option.get_attribute("value")]
@@ -58,12 +61,12 @@ def preencher_formulario(navegador, subs_agrupadora_sublist, grupo_id, subset_id
             try:
                 print(f'Erro ao selecionar a subs_agrupadora erro: {e}')
                 navegador.refresh()
-                if substancia_agrupadora == 'Todas as Agrupadoras':
+                if subs == 'Todas as Agrupadoras':
                     continue    
                 subs_agrupadora = selecionar_subs_agrupadora(func_navegador=navegador)
                 #LINHA QUE SELECIONA O CAMPO NO COMBOBOX
-                subs_agrupadora.select_by_value(substancia_agrupadora)
-                print(f'subs_agrupadora: {substancia_agrupadora}')
+                subs_agrupadora.select_by_value(subs_agrupada)
+                print(f'subs_agrupadora: {subs_agrupada}')
                 
                 substancia = selecionar_substancia(func_navegador=navegador)
                 substancia_valores = [option.get_attribute("value") for option in substancia.options if option.get_attribute("value")]
@@ -71,12 +74,12 @@ def preencher_formulario(navegador, subs_agrupadora_sublist, grupo_id, subset_id
                 print(f'Não consegui recuperar do erro usando refresh, abrindo navegador novamente...')
                 navegador.quit()
                 abrir_navegador()
-                if substancia_agrupadora == 'Todas as Agrupadoras':
+                if subs_agrupada == 'Todas as Agrupadoras':
                     continue    
                 subs_agrupadora = selecionar_subs_agrupadora(func_navegador=navegador)
                 #LINHA QUE SELECIONA O CAMPO NO COMBOBOX
-                subs_agrupadora.select_by_value(substancia_agrupadora)
-                print(f'subs_agrupadora: {substancia_agrupadora}')
+                subs_agrupadora.select_by_value(subs_agrupada)
+                print(f'subs_agrupadora: {subs_agrupada}')
                 
                 substancia = selecionar_substancia(func_navegador=navegador)
                 substancia_valores = [option.get_attribute("value") for option in substancia.options if option.get_attribute("value")]
@@ -86,7 +89,7 @@ def preencher_formulario(navegador, subs_agrupadora_sublist, grupo_id, subset_id
                     continue
                 substancia = selecionar_substancia(func_navegador=navegador)
                 #LINHA QUE SELECIONA O CAMPO NO COMBOBOX
-                print(f'Os valores disponíveis de substancias para a subs.agrupadora:{substancia_agrupadora} são :{substancia_valores}')
+                print(f'Os valores disponíveis de substancias para a subs.agrupadora:{subs} são :{substancia_valores}')
                 substancia.select_by_value(subs)
                 print(f'substancia_interna: {subs}')
                 
@@ -102,7 +105,7 @@ def preencher_formulario(navegador, subs_agrupadora_sublist, grupo_id, subset_id
                     continue
                 substancia = selecionar_substancia(func_navegador=navegador)
                 #LINHA QUE SELECIONA O CAMPO NO COMBOBOX
-                print(f'Os valores disponíveis de substancias para a subs.agrupadora:{substancia_agrupadora} são :{substancia_valores}')
+                print(f'Os valores disponíveis de substancias para a subs.agrupadora:{subs} são :{substancia_valores}')
                 substancia.select_by_value(subs)
                 print(f'substancia_interna: {subs}')
                 
@@ -172,20 +175,19 @@ def preencher_formulario(navegador, subs_agrupadora_sublist, grupo_id, subset_id
                         print(datetime.now().strftime("%H-%M-%S"))
                         salvar_dados_completos_planilha(dados_completos, nome_arquivo=f"{nome_arquivo}.xlsx")
         
-        # Salvar o progresso após cada substância
-        subset_key = f"{grupo_id}_{subset_id}_{substancia_agrupadora}"  # Garante que é uma string válida
-        salvar_checkpoint(subset_checkpoint_file, subset_key)
-        
-    # 🔹 Ao final do subset, salva que ele foi concluído por completo
-    salvar_checkpoint(subset_checkpoint_file, f"{grupo_id}_{subset_id}")
+        # Somente salva no checkpoint após concluir todas as substâncias
+        salvar_checkpoint(subset_checkpoint_file, subs_agrupada)
 
 
 
-def executar_robo(subset, grupo_id, subset_id):
-    """Executa o robô para um subconjunto de substâncias"""
+def executar_robo(subs_agrupadora):
+    """Executa o robô para uma única subs_agrupadora."""
     navegador = abrir_navegador()
-    preencher_formulario(navegador, subset, grupo_id, subset_id)
+    subs_agrupadora = selecionar_subs_agrupadora(func_navegador=navegador)
+    subs_agrupadora_valores = [option.get_attribute("value") for option in subs_agrupadora.options if option.get_attribute("value")]
+    preencher_formulario(navegador, subs_agrupadora_valores)
     navegador.quit()
+    return subs_agrupadora_valores
 
 
 if __name__ == "__main__":
@@ -193,39 +195,30 @@ if __name__ == "__main__":
     sleep(5)
     subs_agrupadora = selecionar_subs_agrupadora(func_navegador=navegador)
     subs_agrupadora_valores = [option.get_attribute("value") for option in subs_agrupadora.options if option.get_attribute("value")]
+    
+    print(f"✅ Subs Agrupadora Valores Encontrados: {subs_agrupadora_valores}")
     navegador.quit()
 
-    grupos = np.array_split(subs_agrupadora_valores, num_grupos)
-    grupos = [grupo.tolist() for grupo in grupos]
-    checkpoint = carregar_checkpoint(checkpoint_file)
-    subset_checkpoint = carregar_checkpoint(subset_checkpoint_file)
+    checkpoint = carregar_checkpoint(subset_checkpoint_file)
+    subs_pendentes = [subs_agrupada for subs_agrupada in subs_agrupadora_valores if subs_agrupada not in checkpoint]
+    
+    processos = []
+    for subs_agrupadora in subs_pendentes:
+        p = Process(target=executar_robo, args=(subs_agrupadora,))
+        processos.append(p)
+        p.start()
 
-    for grupo_id, grupo in enumerate(grupos):
-        if str(grupo_id) in checkpoint:
-            print(f"✅ Grupo {grupo_id} já processado. Pulando...")
-            continue
+        if len(processos) >= num_processos:  # Se atingiu o limite, espera os processos terminarem antes de iniciar novos
+            for p in processos:
+                p.join()
+            processos = []  # Esvazia a lista de processos concluídos
 
-        print(f"🚀 Iniciando processamento do Grupo {grupo_id + 1}/{num_grupos}...")
-        subsets = np.array_split(grupo, num_processos)
-        subsets = [sub.tolist() for sub in subsets]
-
-        processos = []
-        for subset_id, subset in enumerate(subsets):
-            subset_key = f"{grupo_id}_{subset_id}"
-            if subset_key in subset_checkpoint:
-                print(f"✅ Subset {subset_id} do Grupo {grupo_id} já processado. Pulando...")
-                continue
-            p = Process(target=executar_robo, args=(subset, grupo_id, subset_id))
-            processos.append(p)
-            p.start()
-
-        for p in processos:
-            p.join()
-
-        salvar_checkpoint(checkpoint_file, grupo_id)
-
-    arquivos_para_mesclar = [f"{nome_arquivo}_Grupo{i}_Subset{j}.xlsx" for i in range(num_grupos) for j in range(num_processos) if f"{i}_{j}" in subset_checkpoint]
-    mesclar_planilhas(arquivos_para_mesclar, nome_arquivo_final=f"{nome_arquivo}.xlsx")
+    # Garante que todos os processos terminem
+    for p in processos:
+        p.join()
+        
+    
+    # mesclar_planilhas( f"{nome_arquivo}.xlsx")
 
                                     
                                 

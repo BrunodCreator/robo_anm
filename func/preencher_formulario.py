@@ -15,6 +15,7 @@ from func.clicar_gera import clicar_gera
 from func.salvar_dados_planilha import capturar_todos_os_dados, salvar_dados_completos_planilha
 from func.abrir_navegador import abrir_navegador
 from func.manipular_checkpoint import carregar_checkpoint, salvar_checkpoint
+from func.verificar_existencia_de_dados import verificar_existencia_de_dados, verificar_existencia_de_dados_por_estado
 
 
 
@@ -80,8 +81,13 @@ def preencher_formulario(navegador, subs_agrupadora_valores, subset_checkpoint_f
                 #SELECIONAR A REGIÃO CENTRO-OESTE
                 selecionar_regiao(func_navegador=navegador)
                 
+                if not verificar_existencia_de_dados(navegador, subs=subs):
+                    print(f'❌ Sem dados para a substância {subs}. Pulando para a próxima.')
+                    continue #Pula para a próxima substância
+                
                 estados = selecionar_estado(func_navegador=navegador)
                 estados_valores = [option.get_attribute("value") for option in estados.options if option.get_attribute("value")]
+                    
             except Exception as e:
                 print(f'Erro ao selecionar a substancia erro: {e}')
                 navegador.refresh()
@@ -104,6 +110,10 @@ def preencher_formulario(navegador, subs_agrupadora_valores, subset_checkpoint_f
                         continue
                     estados = selecionar_estado(func_navegador=navegador)
                     estados.select_by_value(estado)
+                    
+                    if not verificar_existencia_de_dados_por_estado(navegador, estado=estado):
+                        print(f'❌ Sem dados para a substância {subs}. Pulando para a próxima.')
+                        continue #Pula para a próxima substância
                     print(f'Estado: {estado}')
                     
                     municipios = selecionar_municipio(func_navegador=navegador)
@@ -115,6 +125,7 @@ def preencher_formulario(navegador, subs_agrupadora_valores, subset_checkpoint_f
                         continue
                     estados = selecionar_estado(func_navegador=navegador)
                     estados.select_by_value(estado)
+                    
                     print(f'Estado: {estado}')
                     
                     municipios = selecionar_municipio(func_navegador=navegador)

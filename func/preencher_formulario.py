@@ -6,38 +6,21 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
-from multiprocessing import Process
 from time import sleep
 import os
 from datetime import datetime
-from selecionar_combobox import selecionar_subs_agrupadora, selecionar_substancia, selecionar_regiao, selecionar_estado, selecionar_municipio
-from selecionar_radio import selecionar_radio_empresa, selecionar_radio_operacao
-from clicar_gera import clicar_gera
-from salvar_dados_planilha import capturar_todos_os_dados, salvar_dados_completos_planilha
-from abrir_navegador import abrir_navegador
-import numpy as np
-import sys 
+from func.selecionar_combobox import selecionar_subs_agrupadora, selecionar_substancia, selecionar_regiao, selecionar_estado, selecionar_municipio
+from func.selecionar_radio import selecionar_radio_empresa, selecionar_radio_operacao
+from func.clicar_gera import clicar_gera
+from func.salvar_dados_planilha import capturar_todos_os_dados, salvar_dados_completos_planilha
+from func.abrir_navegador import abrir_navegador
+from func.manipular_checkpoint import carregar_checkpoint, salvar_checkpoint
 
-#Configurações
+
+
 nome_arquivo = "Vai_dar_certo"
-num_processos = 1  # 🔹 Instâncias paralelas dentro de cada grupo
-subset_checkpoint_file = "subset_checkpoint.txt"  # 🔹 Checkpoint dos subsets
 
-def carregar_checkpoint(arquivo):
-    """Carrega os grupos ou subsets já processados do checkpoint."""
-    if os.path.exists(arquivo):
-        with open(arquivo, "r") as f:
-            return set(f.read().splitlines())
-    return set()
-    
-def salvar_checkpoint(arquivo, checkpoint_id):
-    """Salva um grupo ou subset concluído no checkpoint."""
-    print(f"✅ Salvando {checkpoint_id} no checkpoint...")
-    with open(arquivo, "a") as f:
-        f.write(f"{checkpoint_id}\n")  # Garante que o ID será salvo corretamente como string
-
-
-def preencher_formulario(navegador, subs_agrupadora_valores):
+def preencher_formulario(navegador, subs_agrupadora_valores, subset_checkpoint_file):
     """Preenche o formulário apenas para um subconjunto de dados"""
 # Dividir os dados de `subs_agrupadora` em subconjuntos
     checkpoint = carregar_checkpoint(subset_checkpoint_file)
@@ -73,7 +56,7 @@ def preencher_formulario(navegador, subs_agrupadora_valores):
             except Exception as e:
                 print(f'Não consegui recuperar do erro usando refresh, abrindo navegador novamente...')
                 navegador.quit()
-                abrir_navegador()
+                navegador = abrir_navegador()
                 if subs_agrupada == 'Todas as Agrupadoras':
                     continue    
                 subs_agrupadora = selecionar_subs_agrupadora(func_navegador=navegador)
@@ -83,6 +66,7 @@ def preencher_formulario(navegador, subs_agrupadora_valores):
                 
                 substancia = selecionar_substancia(func_navegador=navegador)
                 substancia_valores = [option.get_attribute("value") for option in substancia.options if option.get_attribute("value")]
+                
         for subs in substancia_valores:
             try:
                 if subs == 'Todas as Substância':
@@ -180,47 +164,9 @@ def preencher_formulario(navegador, subs_agrupadora_valores):
 
 
 
-def executar_robo(subs_agrupadora):
-    """Executa o robô para uma única subs_agrupadora."""
-    navegador = abrir_navegador()
-    subs_agrupadora = selecionar_subs_agrupadora(func_navegador=navegador)
-    subs_agrupadora_valores = [option.get_attribute("value") for option in subs_agrupadora.options if option.get_attribute("value")]
-    preencher_formulario(navegador, subs_agrupadora_valores)
-    navegador.quit()
-    return subs_agrupadora_valores
 
 
-if __name__ == "__main__":
-    navegador = abrir_navegador()
-    sleep(5)
-    subs_agrupadora = selecionar_subs_agrupadora(func_navegador=navegador)
-    subs_agrupadora_valores = [option.get_attribute("value") for option in subs_agrupadora.options if option.get_attribute("value")]
-    
-    print(f"✅ Subs Agrupadora Valores Encontrados: {subs_agrupadora_valores}")
-    navegador.quit()
 
-    checkpoint = carregar_checkpoint(subset_checkpoint_file)
-    subs_pendentes = [subs_agrupada for subs_agrupada in subs_agrupadora_valores if subs_agrupada not in checkpoint]
-    
-    processos = []
-    for subs_agrupadora in subs_pendentes:
-        p = Process(target=executar_robo, args=(subs_agrupadora,))
-        processos.append(p)
-        p.start()
-
-        if len(processos) >= num_processos:  # Se atingiu o limite, espera os processos terminarem antes de iniciar novos
-            for p in processos:
-                p.join()
-            processos = []  # Esvazia a lista de processos concluídos
-
-    # Garante que todos os processos terminem
-    for p in processos:
-        p.join()
-        
-    
-    # mesclar_planilhas( f"{nome_arquivo}.xlsx")
-
-                                    
                                 
                                 
       
